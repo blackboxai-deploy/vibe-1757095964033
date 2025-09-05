@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NH BOX - Stream Movies and Web Series</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a0000 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(45deg, #000000, #8B0000);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-logo {
+            font-size: 48px;
+            font-weight: bold;
+            color: #FF0000;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #8B0000, #FF0000);
+            border-radius: 2px;
+            animation: loading 3s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* Main Container */
+        .main-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .main-container.visible {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.9), rgba(139, 0, 0, 0.3));
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #8B0000;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FF0000;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 50px 12px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #8B0000;
+            border-radius: 25px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #FF0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(45deg, #8B0000, #FF0000);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Hero Slider */
+        .hero-slider {
+            height: 250px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .hero-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: end;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .hero-slide.active {
+            opacity: 1;
+        }
+
+        .hero-overlay {
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            width: 100%;
+            padding: 30px 20px;
+        }
+
+        .hero-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .hero-meta {
+            font-size: 14px;
+            color: #CCCCCC;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hero-rating {
+            background: #8B0000;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Category Sections */
+        .category-section {
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .view-all-btn {
+            background: transparent;
+            border: 1px solid #8B0000;
+            color: #FF0000;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .view-all-btn:hover {
+            background: #8B0000;
+            color: white;
+        }
+
+        /* Content Slider */
+        .content-slider {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-track {
+            display: flex;
+            gap: 15px;
+            transition: transform 0.3s ease;
+            padding-bottom: 10px;
+        }
+
+        .content-card {
+            min-width: 120px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .content-card:hover {
+            transform: scale(1.05);
+        }
+
+        .card-poster {
+            width: 120px;
+            height: 180px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .content-card:hover .card-poster {
+            border-color: #FF0000;
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4);
+        }
+
+        .card-badges {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .card-badge {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .card-badge.series {
+            background: #8B0000;
+        }
+
+        .card-badge.movie {
+            background: #FF0000;
+        }
+
+        .card-badge.free {
+            background: #00AA00;
+        }
+
+        .card-badge.vip {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .card-title {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            color: white;
+            line-height: 1.3;
+            height: 32px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Details Page */
+        .details-page {
+            display: none;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #000000;
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .details-page.visible {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .details-backdrop {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            border: 3px solid #8B0000;
+        }
+
+        .details-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            padding: 20px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #8B0000;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .details-content {
+            padding: 20px;
+        }
+
+        .details-main {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .details-poster {
+            width: 120px;
+            height: 180px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            border: 3px solid #8B0000;
+            flex-shrink: 0;
+        }
+
+        .details-info {
+            flex: 1;
+        }
+
+        .details-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: white;
+            border: 2px solid #8B0000;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        .details-meta {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .meta-item {
+            background: rgba(139, 0, 0, 0.1);
+            border: 2px solid #8B0000;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .meta-label {
+            font-weight: bold;
+            color: #CCCCCC;
+        }
+
+        .meta-value {
+            color: white;
+            font-weight: bold;
+        }
+
+        .details-storyline {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #8B0000;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .storyline-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #FF0000;
+        }
+
+        .storyline-text {
+            line-height: 1.6;
+            color: #CCCCCC;
+        }
+
+        /* Cast Section */
+        .cast-section {
+            margin-bottom: 30px;
+        }
+
+        .cast-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #FF0000;
+        }
+
+        .cast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 15px;
+        }
+
+        .cast-member {
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cast-member:hover {
+            transform: scale(1.05);
+        }
+
+        .cast-photo {
+            width: 80px;
+            height: 80px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            margin-bottom: 8px;
+            border: 2px solid #8B0000;
+            transition: all 0.3s ease;
+        }
+
+        .cast-member:hover .cast-photo {
+            border-color: #FF0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+
+        .cast-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .cast-character {
+            font-size: 10px;
+            color: #CCCCCC;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .play-btn {
+            background: linear-gradient(45deg, #8B0000, #FF0000);
+            border: none;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4);
+        }
+
+        .episodes-btn {
+            background: linear-gradient(45deg, #333, #666);
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* Episodes Section */
+        .episodes-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .episodes-section.visible {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .episodes-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .episode-item {
+            background: rgba(139, 0, 0, 0.1);
+            border: 1px solid #8B0000;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .episode-item:hover {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: #FF0000;
+        }
+
+        .episode-number {
+            background: #8B0000;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 50%;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .episode-info {
+            flex: 1;
+        }
+
+        .episode-name {
+            font-weight: bold;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .episode-season {
+            font-size: 12px;
+            color: #CCCCCC;
+        }
+
+        /* Comments Section */
+        .comments-section {
+            border-top: 2px solid #8B0000;
+            padding-top: 30px;
+        }
+
+        .comments-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #FF0000;
+        }
+
+        .comment-form {
+            background: rgba(139, 0, 0, 0.1);
+            border: 2px solid #8B0000;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .comment-textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #8B0000;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .comment-textarea:focus {
+            border-color: #FF0000;
+        }
+
+        .comment-submit {
+            background: linear-gradient(45deg, #8B0000, #FF0000);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .comments-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .comment-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .comment-text {
+            color: #CCCCCC;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .comment-date {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* Video Player */
+        .video-player {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 5000;
+            display: none;
+        }
+
+        .video-player.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .video-element {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: rgba(139, 0, 0, 0.8);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .close-video {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(139, 0, 0, 0.8);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Search Results */
+        .search-results {
+            display: none;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .search-results.visible {
+            display: block;
+        }
+
+        .search-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        /* Full Screen Cast View */
+        .cast-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+            padding: 20px;
+        }
+
+        .cast-modal.visible {
+            display: flex;
+        }
+
+        .cast-modal-content {
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .cast-modal-photo {
+            width: 200px;
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            margin: 0 auto 20px;
+            border: 3px solid #FF0000;
+        }
+
+        .cast-modal-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .cast-modal-character {
+            font-size: 16px;
+            color: #CCCCCC;
+            margin-bottom: 30px;
+        }
+
+        .cast-modal-close {
+            background: #8B0000;
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .search-container {
+                max-width: none;
+                margin: 0;
+            }
+
+            .hero-slider {
+                height: 200px;
+            }
+
+            .hero-title {
+                font-size: 20px;
+            }
+
+            .content-card {
+                min-width: 100px;
+            }
+
+            .card-poster {
+                width: 100px;
+                height: 150px;
+            }
+
+            .details-main {
+                flex-direction: column;
+            }
+
+            .details-poster {
+                width: 100%;
+                max-width: 200px;
+                height: 300px;
+                margin: 0 auto;
+            }
+
+            .cast-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .cast-photo {
+                width: 60px;
+                height: 60px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading States */
+        .loading-placeholder {
+            background: linear-gradient(90deg, rgba(139, 0, 0, 0.1) 25%, rgba(255, 0, 0, 0.1) 50%, rgba(139, 0, 0, 0.1) 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+        }
+
+        @keyframes loading-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #CCCCCC;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .retry-btn {
+            background: #8B0000;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Scroll indicators */
+        .scroll-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(139, 0, 0, 0.8);
+            border: none;
+            color: white;
+            padding: 15px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .scroll-indicator:hover {
+            background: #FF0000;
+        }
+
+        .scroll-left {
+            left: 10px;
+        }
+
+        .scroll-right {
+            right: 10px;
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .content-slider {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .content-slider::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-logo">NH BOX</div>
+        <div class="loading-text">Loading your entertainment...</div>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container" id="mainContainer">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo" onclick="goHome()">NH BOX</div>
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search movies & web series...">
+                <button class="search-btn" onclick="performSearch()">🔍</button>
+            </div>
+        </header>
+
+        <!-- Home Page -->
+        <div id="homePage" class="page">
+            <!-- Hero Slider -->
+            <div class="hero-slider" id="heroSlider">
+                <!-- Hero slides will be populated by JavaScript -->
+            </div>
+
+            <!-- Search Results (Hidden by default) -->
+            <div class="search-results" id="searchResults">
+                <div class="search-title" id="searchTitle">Search Results</div>
+                <div class="search-grid" id="searchGrid">
+                    <!-- Search results will be populated here -->
+                </div>
+            </div>
+
+            <!-- Category Sections -->
+            <div id="categorySections">
+                <div class="category-section">
+                    <div class="category-header">
+                        <h2 class="category-title">🇺🇸 Hollywood</h2>
+                        <button class="view-all-btn" onclick="viewAllCategory('Hollywood')">View All</button>
+                    </div>
+                    <div class="content-slider" id="hollywoodSlider">
+                        <button class="scroll-indicator scroll-left" onclick="scrollSlider('hollywoodSlider', 'left')">‹</button>
+                        <div class="content-track" id="hollywoodTrack">
+                            <div class="loading-placeholder" style="width: 120px; height: 180px; border-radius: 8px;"></div>
+                        </div>
+                        <button class="scroll-indicator scroll-right" onclick="scrollSlider('hollywoodSlider', 'right')">›</button>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header">
+                        <h2 class="category-title">🇮🇳 Bollywood</h2>
+                        <button class="view-all-btn" onclick="viewAllCategory('Bollywood')">View All</button>
+                    </div>
+                    <div class="content-slider" id="bollywoodSlider">
+                        <button class="scroll-indicator scroll-left" onclick="scrollSlider('bollywoodSlider', 'left')">‹</button>
+                        <div class="content-track" id="bollywoodTrack">
+                            <div class="loading-placeholder" style="width: 120px; height: 180px; border-radius: 8px;"></div>
+                        </div>
+                        <button class="scroll-indicator scroll-right" onclick="scrollSlider('bollywoodSlider', 'right')">›</button>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header">
+                        <h2 class="category-title">🌴 South Indian</h2>
+                        <button class="view-all-btn" onclick="viewAllCategory('South Indian')">View All</button>
+                    </div>
+                    <div class="content-slider" id="southIndianSlider">
+                        <button class="scroll-indicator scroll-left" onclick="scrollSlider('southIndianSlider', 'left')">‹</button>
+                        <div class="content-track" id="southIndianTrack">
+                            <div class="loading-placeholder" style="width: 120px; height: 180px; border-radius: 8px;"></div>
+                        </div>
+                        <button class="scroll-indicator scroll-right" onclick="scrollSlider('southIndianSlider', 'right')">›</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Page -->
+        <div class="details-page" id="detailsPage">
+            <div class="details-backdrop" id="detailsBackdrop">
+                <button class="back-btn" onclick="closeDetails()">← Back</button>
+                <div class="details-overlay">
+                    <div id="detailsHeroMeta"></div>
+                </div>
+            </div>
+
+            <div class="details-content">
+                <div class="details-main">
+                    <div class="details-poster" id="detailsPoster"></div>
+                    <div class="details-info">
+                        <div class="details-title" id="detailsTitle"></div>
+                        <div class="details-meta" id="detailsMeta"></div>
+                    </div>
+                </div>
+
+                <div class="details-storyline">
+                    <div class="storyline-title">📖 Storyline</div>
+                    <div class="storyline-text" id="detailsStoryline"></div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="play-btn" id="playBtn" onclick="playContent()">
+                        ▶️ Play Now
+                    </button>
+                    <button class="episodes-btn" id="episodesBtn" onclick="toggleEpisodes()" style="display: none;">
+                        📺 Show All Episodes
+                    </button>
+                </div>
+
+                <!-- Episodes Section -->
+                <div class="episodes-section" id="episodesSection">
+                    <div class="cast-title">📺 Episodes</div>
+                    <div class="episodes-grid" id="episodesGrid">
+                        <!-- Episodes will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Cast Section -->
+                <div class="cast-section">
+                    <div class="cast-title">👥 Top Billed Cast</div>
+                    <div class="cast-grid" id="detailsCast">
+                        <!-- Cast will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <div class="comments-title">💬 Comments</div>
+                    
+                    <div class="comment-form">
+                        <textarea class="comment-textarea" id="commentText" placeholder="Share your thoughts about this content..."></textarea>
+                        <button class="comment-submit" onclick="submitComment()">Post Comment</button>
+                    </div>
+
+                    <div class="comments-list" id="commentsList">
+                        <!-- Comments will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player -->
+    <div class="video-player" id="videoPlayer">
+        <div class="video-container">
+            <video class="video-element" id="videoElement" controls controlsList="nodownload">
+                Your browser does not support the video tag.
+            </video>
+            <button class="close-video" onclick="closeVideo()">✕ Close</button>
+        </div>
+    </div>
+
+    <!-- Cast Modal -->
+    <div class="cast-modal" id="castModal">
+        <div class="cast-modal-content">
+            <div class="cast-modal-photo" id="castModalPhoto"></div>
+            <div class="cast-modal-name" id="castModalName"></div>
+            <div class="cast-modal-character" id="castModalCharacter"></div>
+            <button class="cast-modal-close" onclick="closeCastModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="firebase-config.js"></script>
+    <script>
+        // Global variables
+        let webSeriesData = {};
+        let moviesData = {};
+        let allContent = {};
+        let currentContent = null;
+        let heroSlideIndex = 0;
+        let heroSlideInterval;
+        let isLoading = false;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            try {
+                // Show loading screen for 3 seconds minimum
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    document.getElementById('mainContainer').classList.add('visible');
+                }, 3000);
+
+                // Load data from Firebase
+                await loadAllContent();
+                
+                // Initialize hero slider
+                initializeHeroSlider();
+                
+                // Populate category sections
+                populateCategorySections();
+                
+                // Set up search functionality
+                setupSearch();
+                
+                // Start real-time listeners
+                startRealtimeListeners();
+                
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showErrorState();
+            }
+        }
+
+        async function loadAllContent() {
+            try {
+                isLoading = true;
+                
+                // Load web series
+                const webSeries = await window.FirebaseDB.getWebSeries();
+                webSeriesData = webSeries || {};
+                
+                // Load movies
+                const movies = await window.FirebaseDB.getMovies();
+                moviesData = movies || {};
+                
+                // Combine all content
+                allContent = { ...webSeriesData, ...moviesData };
+                
+                isLoading = false;
+                
+            } catch (error) {
+                console.error('Error loading content:', error);
+                isLoading = false;
+                throw error;
+            }
+        }
+
+        function startRealtimeListeners() {
+            // Listen to web series changes
+            window.FirebaseDB.listenToWebSeries((data) => {
+                webSeriesData = data || {};
+                allContent = { ...webSeriesData, ...moviesData };
+                updateAllSections();
+            });
+
+            // Listen to movies changes
+            window.FirebaseDB.listenToMovies((data) => {
+                moviesData = data || {};
+                allContent = { ...webSeriesData, ...moviesData };
+                updateAllSections();
+            });
+        }
+
+        function updateAllSections() {
+            populateCategorySections();
+            updateHeroSlider();
+            
+            // Update search results if search is active
+            const searchResults = document.getElementById('searchResults');
+            if (searchResults.classList.contains('visible')) {
+                performSearch();
+            }
+        }
+
+        // Hero Slider Functions
+        function initializeHeroSlider() {
+            const heroSlider = document.getElementById('heroSlider');
+            const contentArray = Object.values(allContent);
+            
+            if (contentArray.length === 0) {
+                heroSlider.innerHTML = '<div class="error-state"><div class="error-icon">🎬</div><div class="error-message">No content available</div></div>';
+                return;
+            }
+
+            // Get recent 5 content items
+            const recentContent = contentArray
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+                .slice(0, 5);
+
+            // Create hero slides
+            const slidesHtml = recentContent.map((content, index) => `
+                <div class="hero-slide ${index === 0 ? 'active' : ''}" style="background-image: url('${content.backdrop || content.poster}')">
+                    <div class="hero-overlay">
+                        <div class="hero-title">${content.title}</div>
+                        <div class="hero-meta">
+                            <span>${content.year}</span>
+                            <span class="hero-rating">⭐ ${content.rating}</span>
+                            <span>${content.type === 'webseries' ? '📺 Series' : '🎬 Movie'}</span>
+                            <span class="hero-rating ${content.access.toLowerCase()}">${content.access}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            heroSlider.innerHTML = slidesHtml;
+
+            // Start auto-sliding
+            startHeroSlider();
+        }
+
+        function startHeroSlider() {
+            const slides = document.querySelectorAll('.hero-slide');
+            if (slides.length <= 1) return;
+
+            heroSlideInterval = setInterval(() => {
+                // Hide current slide
+                slides[heroSlideIndex].classList.remove('active');
+                
+                // Move to next slide
+                heroSlideIndex = (heroSlideIndex + 1) % slides.length;
+                
+                // Show next slide
+                slides[heroSlideIndex].classList.add('active');
+            }, 4000); // Change slide every 4 seconds
+        }
+
+        function updateHeroSlider() {
+            clearInterval(heroSlideInterval);
+            initializeHeroSlider();
+        }
+
+        // Category Sections
+        function populateCategorySections() {
+            const categories = ['Hollywood', 'Bollywood', 'South Indian'];
+            
+            categories.forEach(category => {
+                const categoryContent = Object.values(allContent).filter(item => 
+                    item.category === category
+                );
+                
+                const trackId = category.toLowerCase().replace(' ', '') + 'Track';
+                const track = document.getElementById(trackId);
+                
+                if (!track) return;
+                
+                if (categoryContent.length === 0) {
+                    track.innerHTML = '<div class="error-state" style="min-width: 300px;"><div class="error-message">No content available in this category</div></div>';
+                    return;
+                }
+                
+                const cardsHtml = categoryContent.map(content => createContentCard(content)).join('');
+                track.innerHTML = cardsHtml;
+            });
+        }
+
+        function createContentCard(content) {
+            return `
+                <div class="content-card" onclick="openDetails('${content.id}')">
+                    <div class="card-poster" style="background-image: url('${content.poster}')">
+                        <div class="card-badges">
+                            <span class="card-badge ${content.type}">${content.type === 'webseries' ? 'SERIES' : 'MOVIE'}</span>
+                            <span class="card-badge ${content.access.toLowerCase()}">${content.access}</span>
+                        </div>
+                    </div>
+                    <div class="card-title">${content.title}</div>
+                </div>
+            `;
+        }
+
+        // Search Functionality
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            
+            // Add debounced search
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    if (searchInput.value.trim()) {
+                        performSearch();
+                    } else {
+                        hideSearchResults();
+                    }
+                }, 500);
+            });
+
+            // Enter key search
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        }
+
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            const searchResults = document.getElementById('searchResults');
+            const searchGrid = document.getElementById('searchGrid');
+            const searchTitle = document.getElementById('searchTitle');
+            const categorySections = document.getElementById('categorySections');
+
+            if (!searchTerm) {
+                hideSearchResults();
+                return;
+            }
+
+            // Filter content based on search term
+            const filteredContent = Object.values(allContent).filter(content =>
+                content.title.toLowerCase().includes(searchTerm) ||
+                content.storyline.toLowerCase().includes(searchTerm) ||
+                content.category.toLowerCase().includes(searchTerm) ||
+                (content.cast && content.cast.some(actor => 
+                    actor.name.toLowerCase().includes(searchTerm)
+                ))
+            );
+
+            // Update search title
+            searchTitle.textContent = `Search Results for "${searchTerm}" (${filteredContent.length} found)`;
+
+            // Populate search results
+            if (filteredContent.length === 0) {
+                searchGrid.innerHTML = '<div class="error-state"><div class="error-icon">🔍</div><div class="error-message">No results found</div></div>';
+            } else {
+                const resultsHtml = filteredContent.map(content => createContentCard(content)).join('');
+                searchGrid.innerHTML = resultsHtml;
+            }
+
+            // Show search results and hide categories
+            searchResults.classList.add('visible');
+            categorySections.style.display = 'none';
+        }
+
+        function hideSearchResults() {
+            const searchResults = document.getElementById('searchResults');
+            const categorySections = document.getElementById('categorySections');
+            
+            searchResults.classList.remove('visible');
+            categorySections.style.display = 'block';
+        }
+
+        // Navigation Functions
+        function goHome() {
+            hideSearchResults();
+            document.getElementById('searchInput').value = '';
+            closeDetails();
+        }
+
+        function viewAllCategory(category) {
+            // Simulate search for category
+            document.getElementById('searchInput').value = category;
+            performSearch();
+        }
+
+        // Slider Navigation
+        function scrollSlider(sliderId, direction) {
+            const slider = document.getElementById(sliderId);
+            const track = slider.querySelector('.content-track');
+            const cardWidth = 135; // 120px + 15px gap
+            const scrollAmount = cardWidth * 3; // Scroll 3 cards at a time
+
+            const currentTransform = track.style.transform || 'translateX(0px)';
+            const currentX = parseInt(currentTransform.match(/-?\d+/)?.[0] || 0);
+
+            let newX;
+            if (direction === 'left') {
+                newX = Math.min(0, currentX + scrollAmount);
+            } else {
+                const maxScroll = -(track.scrollWidth - slider.offsetWidth);
+                newX = Math.max(maxScroll, currentX - scrollAmount);
+            }
+
+            track.style.transform = `translateX(${newX}px)`;
+        }
+
+        // Details Page Functions
+        function openDetails(contentId) {
+            const content = allContent[contentId];
+            if (!content) return;
+
+            currentContent = content;
+            populateDetailsPage(content);
+            loadComments(contentId);
+            
+            document.getElementById('detailsPage').classList.add('visible');
+        }
+
+        function closeDetails() {
+            document.getElementById('detailsPage').classList.remove('visible');
+            closeVideo();
+            currentContent = null;
+        }
+
+        function populateDetailsPage(content) {
+            // Set backdrop
+            const detailsBackdrop = document.getElementById('detailsBackdrop');
+            detailsBackdrop.style.backgroundImage = `url('${content.backdrop || content.poster}')`;
+
+            // Set poster
+            const detailsPoster = document.getElementById('detailsPoster');
+            detailsPoster.style.backgroundImage = `url('${content.poster}')`;
+
+            // Set title
+            document.getElementById('detailsTitle').textContent = content.title;
+
+            // Set meta information
+            const metaHtml = `
+                <div class="meta-item">
+                    <span class="meta-label">Language</span>
+                    <span class="meta-value">${content.language}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Year</span>
+                    <span class="meta-value">${content.year}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Rating</span>
+                    <span class="meta-value">⭐ ${content.rating}/10</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Category</span>
+                    <span class="meta-value">${content.category}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Access</span>
+                    <span class="meta-value ${content.access.toLowerCase()}">${content.access}</span>
+                </div>
+            `;
+            document.getElementById('detailsMeta').innerHTML = metaHtml;
+
+            // Set storyline
+            document.getElementById('detailsStoryline').textContent = content.storyline;
+
+            // Handle episodes for web series
+            const episodesBtn = document.getElementById('episodesBtn');
+            const episodesSection = document.getElementById('episodesSection');
+            
+            if (content.type === 'webseries' && content.episodes && content.episodes.length > 0) {
+                episodesBtn.style.display = 'block';
+                populateEpisodes(content.episodes);
+            } else {
+                episodesBtn.style.display = 'none';
+                episodesSection.classList.remove('visible');
+            }
+
+            // Set cast
+            populateCast(content.cast || []);
+        }
+
+        function populateEpisodes(episodes) {
+            const episodesGrid = document.getElementById('episodesGrid');
+            
+            const episodesHtml = episodes.map(episode => `
+                <div class="episode-item" onclick="playEpisode('${episode.link}')">
+                    <div class="episode-number">S${episode.season || 1}E${episode.episode}</div>
+                    <div class="episode-info">
+                        <div class="episode-name">${episode.name || `Episode ${episode.episode}`}</div>
+                        <div class="episode-season">Season ${episode.season || 1}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            episodesGrid.innerHTML = episodesHtml;
+        }
+
+        function populateCast(cast) {
+            const detailsCast = document.getElementById('detailsCast');
+            
+            if (!cast || cast.length === 0) {
+                detailsCast.innerHTML = '<div class="error-state"><div class="error-message">No cast information available</div></div>';
+                return;
+            }
+            
+            const castHtml = cast.map(member => `
+                <div class="cast-member" onclick="openCastModal('${member.name}', '${member.photo || ''}', '${member.character || ''}')">
+                    <div class="cast-photo" style="background-image: url('${member.photo || 'https://placehold.co/80x80?text=No+Photo'}')"></div>
+                    <div class="cast-name">${member.name}</div>
+                    <div class="cast-character">${member.character || 'Unknown'}</div>
+                </div>
+            `).join('');
+            
+            detailsCast.innerHTML = castHtml;
+        }
+
+        // Episodes Functions
+        function toggleEpisodes() {
+            const episodesSection = document.getElementById('episodesSection');
+            const episodesBtn = document.getElementById('episodesBtn');
+            
+            if (episodesSection.classList.contains('visible')) {
+                episodesSection.classList.remove('visible');
+                episodesBtn.textContent = '📺 Show All Episodes';
+            } else {
+                episodesSection.classList.add('visible');
+                episodesBtn.textContent = '📺 Hide Episodes';
+            }
+        }
+
+        // Video Player Functions
+        function playContent() {
+            if (!currentContent) return;
+
+            let videoUrl = '';
+            
+            if (currentContent.type === 'movie' && currentContent.link) {
+                videoUrl = currentContent.link;
+            } else if (currentContent.type === 'webseries' && currentContent.episodes && currentContent.episodes.length > 0) {
+                // Play first episode
+                videoUrl = currentContent.episodes[0].link;
+            }
+            
+            if (videoUrl) {
+                showVideo(videoUrl);
+            } else {
+                alert('Video not available. Please contact administrator.');
+            }
+        }
+
+        function playEpisode(episodeUrl) {
+            if (episodeUrl) {
+                showVideo(episodeUrl);
+            } else {
+                alert('Episode not available.');
+            }
+        }
+
+        function showVideo(videoUrl) {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const videoElement = document.getElementById('videoElement');
+            
+            videoElement.src = videoUrl;
+            videoPlayer.classList.add('visible');
+            videoElement.play().catch(e => {
+                console.error('Error playing video:', e);
+                alert('Error loading video. Please try again later.');
+                closeVideo();
+            });
+        }
+
+        function closeVideo() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const videoElement = document.getElementById('videoElement');
+            
+            videoElement.pause();
+            videoElement.src = '';
+            videoPlayer.classList.remove('visible');
+        }
+
+        // Cast Modal Functions
+        function openCastModal(name, photo, character) {
+            const modal = document.getElementById('castModal');
+            const modalPhoto = document.getElementById('castModalPhoto');
+            const modalName = document.getElementById('castModalName');
+            const modalCharacter = document.getElementById('castModalCharacter');
+            
+            modalPhoto.style.backgroundImage = `url('${photo || 'https://placehold.co/200x200?text=No+Photo'}')`;
+            modalName.textContent = name;
+            modalCharacter.textContent = character || 'Character Unknown';
+            
+            modal.classList.add('visible');
+        }
+
+        function closeCastModal() {
+            document.getElementById('castModal').classList.remove('visible');
+        }
+
+        // Comments Functions
+        async function loadComments(contentId) {
+            try {
+                const comments = await window.FirebaseDB.getComments(contentId);
+                displayComments(comments);
+                
+                // Start real-time listener for comments
+                window.FirebaseDB.listenToComments(contentId, displayComments);
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                document.getElementById('commentsList').innerHTML = '<div class="error-state"><div class="error-message">Error loading comments</div></div>';
+            }
+        }
+
+        function displayComments(comments) {
+            const commentsList = document.getElementById('commentsList');
+            
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<div class="error-state"><div class="error-message">No comments yet. Be the first to comment!</div></div>';
+                return;
+            }
+            
+            const commentsHtml = comments.map(comment => `
+                <div class="comment-item">
+                    <div class="comment-text">${comment.comment}</div>
+                    <div class="comment-date">${new Date(comment.timestamp).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+            
+            commentsList.innerHTML = commentsHtml;
+        }
+
+        async function submitComment() {
+            if (!currentContent) return;
+            
+            const commentText = document.getElementById('commentText');
+            const comment = commentText.value.trim();
+            
+            if (!comment) {
+                alert('Please enter a comment');
+                return;
+            }
+            
+            try {
+                await window.FirebaseDB.saveComment(
+                    currentContent.id,
+                    currentContent.type,
+                    comment
+                );
+                
+                commentText.value = '';
+                window.showNotification && window.showNotification('Comment posted successfully!', 'success');
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                alert('Error posting comment. Please try again.');
+            }
+        }
+
+        // Error Handling
+        function showErrorState() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('mainContainer').innerHTML = `
+                <div class="error-state">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-message">Unable to load content. Please check your connection.</div>
+                    <button class="retry-btn" onclick="location.reload()">Retry</button>
+                </div>
+            `;
+            document.getElementById('mainContainer').classList.add('visible');
+        }
+
+        // Event Listeners
+        document.addEventListener('keydown', function(e) {
+            // ESC key to close modals
+            if (e.key === 'Escape') {
+                closeCastModal();
+                closeVideo();
+                
+                const detailsPage = document.getElementById('detailsPage');
+                if (detailsPage.classList.contains('visible')) {
+                    closeDetails();
+                }
+            }
+        });
+
+        // Handle clicks outside modals
+        document.getElementById('castModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCastModal();
+            }
+        });
+
+        // Prevent video player from closing when clicking on controls
+        document.getElementById('videoPlayer').addEventListener('click', function(e) {
+            if (e.target === this) {
+                // Optional: close on background click
+                // closeVideo();
+            }
+        });
+
+        // Handle orientation changes for mobile
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                // Refresh sliders after orientation change
+                updateAllSections();
+            }, 500);
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Pause hero slider when page is not visible
+                clearInterval(heroSlideInterval);
+            } else {
+                // Resume hero slider when page becomes visible
+                if (document.querySelectorAll('.hero-slide').length > 1) {
+                    startHeroSlider();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
